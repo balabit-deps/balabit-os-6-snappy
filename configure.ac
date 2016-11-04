@@ -1,153 +1,133 @@
-AC_PREREQ(2.60)
-dnl initialize autoconf
-dnl when going to/from release please set the nano (fourth number) right !
-dnl releases only do Wall, cvs and prerelease does Werror too
-AC_INIT([snappy],
-    [0.3.7],
-    NULL,
-    snappy)
-AM_MAINTAINER_MODE
+m4_define([snappy_major], [1])
+m4_define([snappy_minor], [1])
+m4_define([snappy_patchlevel], [3])
 
-AC_CONFIG_SRCDIR([src/snappy.c])
-AM_CONFIG_HEADER([config.h])
-AC_CONFIG_AUX_DIR([build-aux])
+# Libtool shared library interface versions (current:revision:age)
+# Update this value for every release!  (A:B:C will map to foo.so.(A-C).C.B)
+# http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
+m4_define([snappy_ltversion], [4:0:3])
 
-dnl initialize automake
-AM_INIT_AUTOMAKE([1.11.1 no-dist-gzip dist-xz dist-bzip2 tar-ustar])
-
-dnl use pretty build output with automake >= 1.11
-m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])],
-  [AM_DEFAULT_VERBOSITY=1
-   AC_SUBST(AM_DEFAULT_VERBOSITY)])
-m4_define([_LT_AC_TAGCONFIG],[])
-
-dnl find a compiler
-AC_PROG_CC
-AM_PROG_CC_C_O
-AC_STDC_HEADERS
-AM_PROG_LIBTOOL
-
-dnl instruct libtool machinery that the package supports DLLs
-AC_LIBTOOL_WIN32_DLL
-
-AC_CANONICAL_HOST
-
-# keep one single GST_REQ, core/base should be same versions anyway
-GST_REQ=1.0.0
-CLUTTER_REQS=1.12.0
-CLUTTER_GST_REQS=1.5.5
-CLUTTER_GTK_REQS=1.0.2
-GTK_REQS=3.5.0
-GIO_REQ=2.32
-
-PKG_CHECK_MODULES([GST], \
-    [gstreamer-1.0 >= $GST_REQ
-    gstreamer-base-1.0 >= $GST_REQ
-    gstreamer-pbutils-1.0 >= $GST_REQ
-    gstreamer-video-1.0 >= $GST_REQ])
-
-AC_SUBST(GST_CFLAGS)
-AC_SUBST(GST_LIBS)
-
-PKG_CHECK_MODULES([CLUTTER],
-    [clutter-1.0 >= $CLUTTER_REQS])
-AC_SUBST(CLUTTER_CFLAGS)
-AC_SUBST(CLUTTER_LIBS)
-
-PKG_CHECK_MODULES([CLUTTER_GST], [clutter-gst-2.0 >= $CLUTTER_GST_REQS])
-AC_SUBST(CLUTTER_GST_CFLAGS)
-AC_SUBST(CLUTTER_GST_LIBS)
-
-PKG_CHECK_MODULES([CLUTTER_GTK], [clutter-gtk-1.0 >= $CLUTTER_GTK_REQS])
-AC_SUBST(CLUTTER_GTK_CFLAGS)
-AC_SUBST(CLUTTER_GTK_LIBS)
-
-PKG_CHECK_MODULES([GTK], [gtk+-3.0 >= $GTK_REQS])
-AC_SUBST(GTK_CFLAGS)
-AC_SUBST(GTK_LIBS)
-
-PKG_CHECK_MODULES(GIO, gio-2.0 >= $GIO_REQ)
-AC_SUBST(GIO_CFLAGS)
-AC_SUBST(GIO_LIBS)
-
-case "$host" in
-  *-*-mingw*|*-*-cygwin*)
-    PKG_CHECK_MODULES(CLUTTER_WIN32, clutter-win32-1.0,
-      [AC_DEFINE(HAVE_WIN32, 1, [Define if Clutter Win32 is available.])],
-      [])
-    ;;
-  *-*-darwin*)
-    PKG_CHECK_MODULES(CLUTTER_OSX, clutter-osx-1.0,
-      [AC_DEFINE(HAVE_OSX, 1, [Define if Clutter OSX is available.])],
-      [
-        PKG_CHECK_MODULES(CLUTTER_X11, clutter-x11-1.0,
-          [AC_DEFINE(HAVE_X11, 1, [Define if Clutter X11 is available.])],
-          [])
-      ])
-    ;;
-  *)
-    PKG_CHECK_MODULES(CLUTTER_X11, clutter-x11-1.0,
-      [AC_DEFINE(HAVE_X11, 1, [Define if Clutter X11 is available.])],
-      [])
-    ;;
-esac
-
-PKG_CHECK_MODULES(XTEST, xtst,
-    [AC_DEFINE(HAVE_XTEST, 1, [Define if XTest is available.])], [true])
-AC_SUBST(XTEST_CFLAGS)
-AC_SUBST(XTEST_LIBS)
-
-AC_ARG_ENABLE([dbus],
-    AS_HELP_STRING([--enable-dbus], [enable DBus support to disable the screensaver (default=yes)]),
-      [],
-      [enable_dbus=yes])
-
-if test "x$enable_dbus" = "xyes"; then
-  PKG_CHECK_MODULES(GIO_2_26, gio-2.0 >= 2.26,
-      [AC_DEFINE(ENABLE_DBUS, 1, [Define if DBus support is enabled.])],
-      [AC_MSG_ERROR([GIO >= 2.26 not found, which is required for DBus support])])
-fi
-
-dnl our libraries and install dirs use major.minor as a version
-GST_MAJORMINOR=$PACKAGE_VERSION_MAJOR.$PACKAGE_VERSION_MINOR
-dnl we override it here if we need to for the release candidate of new series
-GST_MAJORMINOR=0.10
-AC_SUBST(GST_MAJORMINOR)
-
-AM_PROG_LIBTOOL
-
-dnl Add parameters for aclocal
-AC_SUBST(ACLOCAL_AMFLAGS, "-I m4 -I common/m4")
+AC_INIT([snappy], [snappy_major.snappy_minor.snappy_patchlevel])
 AC_CONFIG_MACRO_DIR([m4])
 
-ROOT_UNINSTALLED_DIR="`pwd`"
-AC_DEFINE_UNQUOTED(SHARE_UNINSTALLED_DIR,"`pwd`/$srcdir/data",[path to source data dir])
-AC_DEFINE_UNQUOTED(SHARE_UNINSTALLED_BUILDDIR,"`pwd`/data",[path to built source data dir])
-AC_SUBST(ROOT_UNINSTALLED_DIR)
+# These are flags passed to automake (though they look like gcc flags!)
+AM_INIT_AUTOMAKE([-Wall])
 
-dnl set license and copyright notice
-GST_LICENSE="LGPL"
-AC_DEFINE_UNQUOTED(GST_LICENSE, "$GST_LICENSE", [GStreamer license])
-AC_SUBST(GST_LICENSE)
+LT_INIT
+AC_SUBST([LIBTOOL_DEPS])
+AC_PROG_CXX
+AC_LANG([C++])
+AC_C_BIGENDIAN
+AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
+AC_CHECK_HEADERS([stdint.h stddef.h sys/mman.h sys/resource.h windows.h byteswap.h sys/byteswap.h sys/endian.h sys/time.h])
 
-dnl keep this alphabetic per directory, please
-AC_CONFIG_FILES([
-Makefile
-data/Makefile
-data/icons/Makefile
-data/icons/256x256/Makefile
-data/icons/48x48/Makefile
-src/Makefile
+# Don't use AC_FUNC_MMAP, as it checks for mappings of already-mapped memory,
+# which we don't need (and does not exist on Windows).
+AC_CHECK_FUNC([mmap])
+
+GTEST_LIB_CHECK([], [true], [true # Ignore; we can live without it.])
+
+AC_ARG_WITH([gflags],
+  [AS_HELP_STRING(
+    [--with-gflags],
+    [use Google Flags package to enhance the unit test @<:@default=check@:>@])],
+    [],
+    [with_gflags=check])
+
+if test "x$with_gflags" != "xno"; then
+  PKG_CHECK_MODULES(
+    [gflags],
+    [libgflags],
+    [AC_DEFINE([HAVE_GFLAGS], [1], [Use the gflags package for command-line parsing.])],
+    [if test "x$with_gflags" != "xcheck"; then
+      AC_MSG_FAILURE([--with-gflags was given, but test for gflags failed])
+    fi])
+fi
+
+# See if we have __builtin_expect.
+# TODO: Use AC_CACHE.
+AC_MSG_CHECKING([if the compiler supports __builtin_expect])
+ 
+AC_TRY_COMPILE(, [
+    return __builtin_expect(1, 1) ? 1 : 0
+], [
+    snappy_have_builtin_expect=yes
+    AC_MSG_RESULT([yes])
+], [
+    snappy_have_builtin_expect=no
+    AC_MSG_RESULT([no])
 ])
+if test x$snappy_have_builtin_expect = xyes ; then
+    AC_DEFINE([HAVE_BUILTIN_EXPECT], [1], [Define to 1 if the compiler supports __builtin_expect.])
+fi
+
+# See if we have working count-trailing-zeros intrinsics.
+# TODO: Use AC_CACHE.
+AC_MSG_CHECKING([if the compiler supports __builtin_ctzll])
+
+AC_TRY_COMPILE(, [
+    return (__builtin_ctzll(0x100000000LL) == 32) ? 1 : 0
+], [
+    snappy_have_builtin_ctz=yes
+    AC_MSG_RESULT([yes])
+], [
+    snappy_have_builtin_ctz=no
+    AC_MSG_RESULT([no])
+])
+if test x$snappy_have_builtin_ctz = xyes ; then
+    AC_DEFINE([HAVE_BUILTIN_CTZ], [1], [Define to 1 if the compiler supports __builtin_ctz and friends.])
+fi
+
+# Other compression libraries; the unit test can use these for comparison
+# if they are available. If they are not found, just ignore.
+UNITTEST_LIBS=""
+AC_DEFUN([CHECK_EXT_COMPRESSION_LIB], [
+  AH_CHECK_LIB([$1])
+  AC_CHECK_LIB(
+    [$1],
+    [$2],
+    [
+      AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_LIB$1))
+      UNITTEST_LIBS="-l$1 $UNITTEST_LIBS"
+    ],
+    [true]
+  )
+])
+CHECK_EXT_COMPRESSION_LIB([z], [zlibVersion])
+CHECK_EXT_COMPRESSION_LIB([lzo2], [lzo1x_1_15_compress])
+CHECK_EXT_COMPRESSION_LIB([lzf], [lzf_compress])
+CHECK_EXT_COMPRESSION_LIB([fastlz], [fastlz_compress])
+CHECK_EXT_COMPRESSION_LIB([quicklz], [qlz_compress])
+AC_SUBST([UNITTEST_LIBS])
+
+# These are used by snappy-stubs-public.h.in.
+if test "$ac_cv_header_stdint_h" = "yes"; then
+    AC_SUBST([ac_cv_have_stdint_h], [1])
+else
+    AC_SUBST([ac_cv_have_stdint_h], [0])
+fi
+if test "$ac_cv_header_stddef_h" = "yes"; then
+    AC_SUBST([ac_cv_have_stddef_h], [1])
+else
+    AC_SUBST([ac_cv_have_stddef_h], [0])
+fi
+if test "$ac_cv_header_sys_uio_h" = "yes"; then
+    AC_SUBST([ac_cv_have_sys_uio_h], [1])
+else
+    AC_SUBST([ac_cv_have_sys_uio_h], [0])
+fi
+
+# Export the version to snappy-stubs-public.h.
+SNAPPY_MAJOR="snappy_major"
+SNAPPY_MINOR="snappy_minor"
+SNAPPY_PATCHLEVEL="snappy_patchlevel"
+
+AC_SUBST([SNAPPY_MAJOR])
+AC_SUBST([SNAPPY_MINOR])
+AC_SUBST([SNAPPY_PATCHLEVEL])
+AC_SUBST([SNAPPY_LTVERSION], snappy_ltversion)
+
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([Makefile snappy-stubs-public.h])
 AC_OUTPUT
-
-echo "
-
-Configuration
-	Version                    : ${VERSION}
-	Source code location       : ${srcdir}
-	Prefix                     : ${prefix}
-	Compiler                   : ${CC}
-
-snappy configured. Type 'make' to build.
-"
